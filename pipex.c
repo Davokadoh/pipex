@@ -29,6 +29,24 @@ void	free_tab(char **tab)
 	free(tab);
 }
 
+void	ft_free(char *str)
+{
+	if (str)
+		free(str);
+}
+
+void	free_all(char **new_av, char *path)
+{
+	free_tab(new_av);
+	ft_free(path);
+}
+
+int	free_all_error(char **new_av, char *path, int error_code)
+{
+	free_all(new_av, path);
+	return (error_code);
+}
+
 int	path_error(char **paths, int i)
 {
 	if (!paths[i])
@@ -67,19 +85,21 @@ char	*get_path(char *program_name, char **envp)
 	return (path);
 }
 
-int	execute(int i, char *path, char **new_av, char **envp)
+int	execute(char *path, char **new_av, char **envp)
 {
-	pid[i] = fork();
-	if (pid[i] == -1)
+	pid_t	pid;
+
+	pid = fork();
+	if (pid == -1)
 		return (1);
-	else if (pid[i] == 0)
+	else if (pid == 0)
 		execve(path, new_av, envp);
 	wait(0);
+	return (0);
 }
 
 int	main(int ac, char **av, char **envp)
 {
-	pid_t	pid[ac];
 	int		i;
 	char	*path;
 	char	**new_av;
@@ -89,14 +109,11 @@ int	main(int ac, char **av, char **envp)
 	{
 		new_av = ft_split(av[i], ' ');
 		if (!new_av || !*new_av || !**new_av) //is that ok ?
+			return (free_all_error(new_av, path, -1));
 		path = get_path(new_av[0], envp);
 		if (!path || !*path)
-		{
-			free_tab(new_av);
-			free(path);
-			return (-1);
-		}
-		free_tab(new_av);
-		free(path);
+			return (free_all_error(new_av, path, -2));
+		execute(path, new_av, envp);
+		free_all(new_av, path);
 	}
 }
