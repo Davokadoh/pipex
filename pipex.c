@@ -67,6 +67,16 @@ char	*get_path(char *program_name, char **envp)
 	return (path);
 }
 
+int	execute(int i, char *path, char **new_av, char **envp)
+{
+	pid[i] = fork();
+	if (pid[i] == -1)
+		return (1);
+	else if (pid[i] == 0)
+		execve(path, new_av, envp);
+	wait(0);
+}
+
 int	main(int ac, char **av, char **envp)
 {
 	pid_t	pid[ac];
@@ -75,10 +85,10 @@ int	main(int ac, char **av, char **envp)
 	char	**new_av;
 
 	i = 0;
-	pid[i] = 1;
 	while (++i < ac)
 	{
 		new_av = ft_split(av[i], ' ');
+		if (!new_av || !*new_av || !**new_av) //is that ok ?
 		path = get_path(new_av[0], envp);
 		if (!path || !*path)
 		{
@@ -86,12 +96,6 @@ int	main(int ac, char **av, char **envp)
 			free(path);
 			return (-1);
 		}
-		pid[i] = fork();
-		if (pid[i] == -1)
-			return (1);
-		else if (pid[i] == 0)
-			execve(path, new_av, envp);
-		wait(0);
 		free_tab(new_av);
 		free(path);
 	}
