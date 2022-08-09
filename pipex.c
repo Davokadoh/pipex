@@ -29,40 +29,70 @@ void	free_tab(char **tab)
 	free(tab);
 }
 
-int	main(int ac, char **av, char **envp)
+int	path_error(char **paths, int i)
 {
-	int		pid;
+	if (!paths[i])
+	{
+		perror(paths[i]);
+		free_tab(paths);
+		return (1);
+	}
+	return (0);
+}
+
+char	*get_path(char *program_name, char **envp)
+{
 	int		i;
+	char	*path;
 	char	**paths;
-	char	**new_av;
 
-	(void) ac;
-	(void) av;
-
-	paths = NULL;
 	i = -1;
 	while (envp[++i])
 	{
 		if (ft_strnstr(envp[i], "PATH=", 5))
-			paths = ft_split(envp[i] + 5, ':');
+			paths = (ft_split(envp[i] + 5, ':'));
 	}
-	new_av = ft_split(av[1], ' ');
 	i = -1;
 	while (paths[++i])
 	{
 		paths[i] = ft_append(paths[i], "/");
-		paths[i] = ft_append(paths[i], new_av[0]);
+		paths[i] = ft_append(paths[i], program_name);
 		if (!access(paths[i], 0))
 			break ;
 	}
-	if (!paths[i])
-	{
-		perror(paths[i]);
-		return (-1);
-	}
-	pid = fork();
-	if (pid == 0)
-		execve(paths[i], &new_av[0], envp);
-	free_tab(new_av);
+	if (path_error(paths, i))
+		return (NULL);
+	path = ft_strdup(paths[i]);
 	free_tab(paths);
+	return (path);
+}
+
+int	main(int ac, char **av, char **envp)
+{
+	pid_t	pid[ac];
+	int		i;
+	char	*path;
+	char	**new_av;
+
+	i = 0;
+	pid[i] = 1;
+	while (++i < ac)
+	{
+		new_av = ft_split(av[i], ' ');
+		path = get_path(new_av[0], envp);
+		if (!path || !*path)
+		{
+			free_tab(new_av);
+			free(path);
+			return (-1);
+		}
+		pid[i] = fork();
+		if (pid[i] == -1)
+			return (1);
+		else if (pid[i] == 0)
+			execve(path, new_av, envp);
+		wait(0);
+		free_tab(new_av);
+		free(path);
+	}
 }
