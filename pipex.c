@@ -109,11 +109,12 @@ int	main(int ac, char **av, char **envp)
 	{
 		new_av = ft_split(av[i], ' ');
 		if (!new_av || !*new_av || !**new_av) //is that ok ?
-			return (free_all_error(new_av, path, -1));
+			return (free_all_error(new_av, path, 1));
 		path = get_path(new_av[0], envp);
 		if (!path || !*path)
-			return (free_all_error(new_av, path, -2));
+			return (free_all_error(new_av, path, 2));
 		execute(path, new_av, envp);
 		free_all(new_av, path);
 	}
+	return (0);
 }
