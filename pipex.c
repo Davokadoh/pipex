@@ -75,7 +75,7 @@ char	*get_path(char *program_name, char **envp)
 	{
 		paths[i] = ft_append(paths[i], "/");
 		paths[i] = ft_append(paths[i], program_name);
-		if (!access(paths[i], 0))
+		if (access(paths[i], F_OK | X_OK) == 0)
 			break ;
 	}
 	if (path_error(paths, i))
