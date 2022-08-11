@@ -93,51 +93,46 @@ int	execute(char *path, char **new_av, char **envp, int i, int max, int fds[2], 
 {
 	pid_t	pid;
 
-	//close(pipes[0][0]);
-	//close(pipes[0][1]);
-	//close(pipes[1][0]);
-	//close(pipes[1][1]);
-	printf("i = %i\n", i);
-	if (i == 3)
-	{
-		dup2(fds[0], STDIN);
-		//dup2(fds[1], STDOUT);
-		dup2(pipes[0][1], STDOUT);
-		close(pipes[0][0]);
-		close(pipes[1][0]);
-		close(pipes[1][1]);
-	}
-	else if (i == max - 1)
-	{
-		dup2(pipes[i % 2][0], STDIN);
-		dup2(fds[1], STDOUT);
-		close(pipes[0][0]);
-		close(pipes[0][1]);
-		close(pipes[1][0]);
-		close(pipes[1][1]);
-	}
-	else if (i % 2 == 1)
-	{
-		dup2(pipes[1][1], pipes[0][0]);
-		dup2(pipes[0][1], STDOUT);
-		close(pipes[0][0]);
-		close(pipes[1][0]);
-		close(pipes[1][1]);
-	}
-	else if (i % 2 == 0)
-	{
-		dup2(pipes[0][1], STDIN);
-		dup2(pipes[1][1], STDOUT);
-		close(pipes[0][0]);
-		close(pipes[0][1]);
-		close(pipes[1][0]);
-	}
 	pid = fork();
 	if (pid == -1)
 		return (1);
 	if (pid == 0)
+	{
+		//printf("i = %i\n", i);
+		if (i == 3)
+		{
+			write(2, "Here1\n", 6);
+			dup2(fds[0], STDIN);
+			dup2(pipes[0][1], STDOUT);
+		}
+		else if (i % 2 == 0)
+		{
+			write(2, "Here2\n", 6);
+			close(fds[0]);
+			close(pipes[0][1]);
+			dup2(pipes[0][0], STDIN);
+			//dup2(pipes[1][1], STDOUT);
+		}
+		else if (i % 2 == 1)
+		{
+			write(2, "Here3\n", 6);
+			close(pipes[1][1]);
+			close(pipes[0][1]);
+			dup2(pipes[1][1], pipes[0][0]);
+			dup2(pipes[0][1], pipes[1][0]);
+		}
+		if (i == max - 1)
+		{
+			dup2(pipes[i % 2][1], pipes[(i + 1) % 2][0]);
+			dup2(fds[1], STDOUT);
+		}
+		write(2, "Executing cmd ", 14);
+		write(2, ft_itoa(i - 2), 1);
+		write(2, "\n", 2);
 		execve(path, new_av, envp);
-	wait(&pid);
+	}
+	else
+		wait(&pid);
 	return (0);
 }
 
@@ -149,14 +144,13 @@ int	main(int ac, char **av, char **envp)
 	char	**new_av;
 	int		pipes[2][2];
 
-	i = 2;
 	fds[0] = open(av[1], O_RDWR);
 	fds[1] = open(av[ac - 1], O_RDWR);
-	if (pipe(pipes[0]) == -1 || pipe(pipes[1]) == -1)
+	if (pipe(pipes[0]) == - 1 || pipe(pipes[1]) == - 1)
 		return (3);
+	i = 2;
 	while (++i < ac)
 	{
-		printf("cmd %i\n", i-2);
 		new_av = ft_split(av[i - 1], ' ');
 		if (!new_av || !*new_av || !**new_av) //is that ok ?
 			return (free_all_error(new_av, path, 1));
@@ -166,6 +160,10 @@ int	main(int ac, char **av, char **envp)
 		execute(path, new_av, envp, i, ac, fds, pipes);
 		free_all(new_av, path);
 	}
+	close(pipes[0][0]);
+	close(pipes[0][1]);
+	close(pipes[1][0]);
+	close(pipes[1][1]);
 	printf("End of pipex\n");
 	return (0);
 }
