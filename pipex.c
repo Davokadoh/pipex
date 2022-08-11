@@ -98,7 +98,6 @@ int	execute(char *path, char **new_av, char **envp, int i, int max, int fds[2], 
 		return (1);
 	if (pid == 0)
 	{
-		//printf("i = %i\n", i);
 		if (i == 3)
 		{
 			write(2, "Here1\n", 6);
@@ -108,10 +107,12 @@ int	execute(char *path, char **new_av, char **envp, int i, int max, int fds[2], 
 		else if (i % 2 == 0)
 		{
 			write(2, "Here2\n", 6);
-			close(fds[0]);
+			//close(fds[0]);
 			close(pipes[0][1]);
-			dup2(pipes[0][0], STDIN);
-			//dup2(pipes[1][1], STDOUT);
+			if (dup2(pipes[0][0], STDIN) == -1)
+				perror("LA1");
+			if (dup2(pipes[1][1], STDOUT) == -1)
+				perror("LA2");
 		}
 		else if (i % 2 == 1)
 		{
@@ -123,6 +124,7 @@ int	execute(char *path, char **new_av, char **envp, int i, int max, int fds[2], 
 		}
 		if (i == max - 1)
 		{
+			write(2, "Here4\n", 6);
 			dup2(pipes[i % 2][1], pipes[(i + 1) % 2][0]);
 			dup2(fds[1], STDOUT);
 		}
