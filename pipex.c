@@ -6,6 +6,8 @@
 
 #define STDIN 0
 #define STDOUT 1
+#define READ 0
+#define WRITE 1
 
 char	*ft_append(char *s1, char *s2)
 {
@@ -92,6 +94,7 @@ char	*get_path(char *program_name, char **envp)
 int	execute(char *path, char **new_av, char **envp, int i, int max, int fds[2], int pipes[2][2])
 {
 	pid_t	pid;
+	int		status;
 
 	pid = fork();
 	if (pid == -1)
@@ -101,32 +104,36 @@ int	execute(char *path, char **new_av, char **envp, int i, int max, int fds[2], 
 		if (i == 3)
 		{
 			write(2, "Here1\n", 6);
+			close(pipes[0][READ]);
 			dup2(fds[0], STDIN);
-			dup2(pipes[0][1], STDOUT);
+			dup2(pipes[0][WRITE], STDOUT);
 		}
-		else if (i % 2 == 0)
-		{
-			write(2, "Here2\n", 6);
-			//close(fds[0]);
-			close(pipes[0][1]);
-			if (dup2(pipes[0][0], STDIN) == -1)
-				perror("LA1");
-			if (dup2(pipes[1][1], STDOUT) == -1)
-				perror("LA2");
-		}
-		else if (i % 2 == 1)
-		{
-			write(2, "Here3\n", 6);
-			close(pipes[1][1]);
-			close(pipes[0][1]);
-			dup2(pipes[1][1], pipes[0][0]);
-			dup2(pipes[0][1], pipes[1][0]);
-		}
-		if (i == max - 1)
+		else if (i == max - 1)
 		{
 			write(2, "Here4\n", 6);
-			dup2(pipes[i % 2][1], pipes[(i + 1) % 2][0]);
+			if (i % 2)
+			{
+				close(pipes[0][WRITE]);
+				dup2(pipes[0][READ], STDIN);
+			}
+			else
+			{
+				close(pipes[1][WRITE]);
+				dup2(pipes[1][READ], STDIN);
+			}
 			dup2(fds[1], STDOUT);
+		}
+		else if (i % 2)
+		{
+			write(2, "Here2\n", 6);
+			dup2(pipes[0][READ], STDIN);
+			dup2(pipes[1][WRITE], STDOUT);
+		}
+		else
+		{
+			write(2, "Here3\n", 6);
+			dup2(pipes[1][READ], STDIN);
+			dup2(pipes[0][WRITE], STDOUT);
 		}
 		write(2, "Executing cmd ", 14);
 		write(2, ft_itoa(i - 2), 1);
@@ -134,7 +141,17 @@ int	execute(char *path, char **new_av, char **envp, int i, int max, int fds[2], 
 		execve(path, new_av, envp);
 	}
 	else
-		wait(&pid);
+	{
+		waitpid(pid, &status, 0);
+		if (i % 2)
+		{
+			close(pipes[1][WRITE]);
+		}
+		else
+		{
+			close(pipes[0][WRITE]);
+		}
+	}
 	return (0);
 }
 
