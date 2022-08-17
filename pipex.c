@@ -104,7 +104,6 @@ int	execute(char *path, char **new_av, char **envp, int i, int max, int fds[2], 
 		if (i == 3)
 		{
 			write(2, "Here1\n", 6);
-			close(pipes[0][READ]);
 			dup2(fds[0], STDIN);
 			dup2(pipes[0][WRITE], STDOUT);
 		}
@@ -125,13 +124,13 @@ int	execute(char *path, char **new_av, char **envp, int i, int max, int fds[2], 
 		}
 		else if (i % 2)
 		{
-			write(2, "Here2\n", 6);
-			dup2(pipes[0][READ], STDIN);
-			dup2(pipes[1][WRITE], STDOUT);
+			write(2, "Here3\n", 6);
+			dup2(pipes[1][READ], STDIN);
+			dup2(pipes[0][WRITE], STDOUT);
 		}
 		else
 		{
-			write(2, "Here3\n", 6);
+			write(2, "Here2\n", 6);
 			dup2(pipes[1][READ], STDIN);
 			dup2(pipes[0][WRITE], STDOUT);
 		}
@@ -140,18 +139,15 @@ int	execute(char *path, char **new_av, char **envp, int i, int max, int fds[2], 
 		write(2, "\n", 2);
 		execve(path, new_av, envp);
 	}
+	if (i % 2)
+	{
+		close(pipes[1][WRITE]);
+	}
 	else
 	{
-		waitpid(pid, &status, 0);
-		if (i % 2)
-		{
-			close(pipes[1][WRITE]);
-		}
-		else
-		{
-			close(pipes[0][WRITE]);
-		}
+		close(pipes[0][WRITE]);
 	}
+	waitpid(pid, &status, 0);
 	return (0);
 }
 
@@ -165,9 +161,9 @@ int	main(int ac, char **av, char **envp)
 
 	fds[0] = open(av[1], O_RDWR);
 	fds[1] = open(av[ac - 1], O_RDWR);
+	i = 2;
 	if (pipe(pipes[0]) == - 1 || pipe(pipes[1]) == - 1)
 		return (3);
-	i = 2;
 	while (++i < ac)
 	{
 		new_av = ft_split(av[i - 1], ' ');
@@ -179,10 +175,6 @@ int	main(int ac, char **av, char **envp)
 		execute(path, new_av, envp, i, ac, fds, pipes);
 		free_all(new_av, path);
 	}
-	close(pipes[0][0]);
-	close(pipes[0][1]);
-	close(pipes[1][0]);
-	close(pipes[1][1]);
 	printf("End of pipex\n");
 	return (0);
 }
