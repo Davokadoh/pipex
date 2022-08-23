@@ -91,7 +91,53 @@ char	*get_path(char *program_name, char **envp)
 	return (path);
 }
 
-int	execute(char *path, char **new_av, char **envp, int i, int max, int fds[2], int pipes[2][2])
+void	infile(int io_fds[2], int pipes[2][2])
+{
+		write(2, "Here1\n", 6);
+		dup2(io_fds[0], STDIN);
+		dup2(pipes[0][WRITE], STDOUT);
+}
+
+void	outfile(int i, int io_fds[2], int pipes[2][2])
+{
+	write(2, "Here4\n", 6);
+	if (i % 2)
+	{
+		close(pipes[0][WRITE]);
+		dup2(pipes[0][READ], STDIN);
+	}
+	else
+	{
+		close(pipes[1][WRITE]);
+		dup2(pipes[1][READ], STDIN);
+	}
+	dup2(io_fds[1], STDOUT);
+}
+
+void	child_pipe_management(int i, int max, int io_fds[2], int pipes[2][2])
+{
+	if (i == 0)
+		infile(io_fds, pipes);
+	else if (i == max - 4)
+		outfile(i, io_fds, pipes);
+	else if (i % 2)
+	{
+		write(2, "Here2\n", 6);
+		dup2(pipes[0][READ], STDIN);
+		dup2(pipes[1][WRITE], STDOUT);
+	}
+	else
+	{
+		write(2, "Here3\n", 6);
+		dup2(pipes[1][READ], STDIN);
+		dup2(pipes[0][WRITE], STDOUT);
+	}
+	write(2, "Executing cmd ", 14);
+	write(2, ft_itoa(i), 1);
+	write(2, "\n", 2);
+}
+
+int	execute(char *path, char **new_av, char **envp, int i, int max, int io_fds[2], int pipes[2][2])
 {
 	pid_t	pid;
 	int		status;
@@ -101,62 +147,27 @@ int	execute(char *path, char **new_av, char **envp, int i, int max, int fds[2], 
 		return (1);
 	if (pid == 0)
 	{
-		if (i == 0)
-		{
-			write(2, "Here1\n", 6);
-			dup2(fds[0], STDIN);
-			dup2(pipes[0][WRITE], STDOUT);
-		}
-		else if (i == max - 4)
-		{
-			write(2, "Here4\n", 6);
-			if (i % 2)
-			{
-				close(pipes[0][WRITE]);
-				dup2(pipes[0][READ], STDIN);
-			}
-			else
-			{
-				close(pipes[1][WRITE]);
-				dup2(pipes[1][READ], STDIN);
-			}
-			dup2(fds[1], STDOUT);
-		}
-		else if (i % 2)
-		{
-			write(2, "Here2\n", 6);
-			dup2(pipes[0][READ], STDIN);
-			dup2(pipes[1][WRITE], STDOUT);
-		}
-		else
-		{
-			write(2, "Here3\n", 6);
-			dup2(pipes[1][READ], STDIN);
-			dup2(pipes[0][WRITE], STDOUT);
-		}
-		write(2, "Executing cmd ", 14);
-		write(2, ft_itoa(i), 1);
-		write(2, "\n", 2);
+		child_pipe_management(i, max, io_fds, pipes);
 		execve(path, new_av, envp);
 	}
+	waitpid(pid, &status, 0);
 	if (i % 2)
 		close(pipes[1][WRITE]);
 	else
 		close(pipes[0][WRITE]);
-	waitpid(pid, &status, 0);
 	return (0);
 }
 
 int	main(int ac, char **av, char **envp)
 {
 	int		i;
-	int		fds[2];
 	char	*path;
 	char	**new_av;
+	int		io_fds[2];
 	int		pipes[2][2];
 
-	fds[0] = open(av[1], O_RDWR);
-	fds[1] = open(av[ac - 1], O_RDWR);
+	io_fds[0] = open(av[1], O_RDWR);
+	io_fds[1] = open(av[ac - 1], O_RDWR);
 	i = -1;
 	while (++i < ac - 3)
 	{
@@ -168,7 +179,7 @@ int	main(int ac, char **av, char **envp)
 		path = get_path(new_av[0], envp);
 		if (!path || !*path)
 			return (free_all_error(new_av, path, 2));
-		execute(path, new_av, envp, i, ac, fds, pipes);
+		execute(path, new_av, envp, i, ac, io_fds, pipes);
 		free_all(new_av, path);
 	}
 	printf("End of pipex\n");
