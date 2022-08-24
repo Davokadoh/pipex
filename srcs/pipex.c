@@ -37,7 +37,7 @@ void	free_tab(char **tab)
 
 void	ft_free(char *str)
 {
-	if (str)
+	if (str && *str)
 		free(str);
 }
 
@@ -57,7 +57,7 @@ int	path_error(char **paths, int i)
 {
 	if (!paths[i])
 	{
-		perror("path error");
+		//perror("path error");
 		free_tab(paths);
 		return (1);
 	}
@@ -154,9 +154,10 @@ int	execute(int i, int max, int io_fds[2], int pipes[2][2])
 
 int check_io(int io_fds[2], char *infile, char *outfile)
 {
-	io_fds[0] = open(infile, O_RDONLY);
+	io_fds[0] = open(infile, O_RDWR);
 	io_fds[1] = open(outfile, O_CREAT | O_RDWR | O_TRUNC, 0644);
-	if (io_fds[0] == -1 | io_fds[1] == -1)
+	//if (io_fds[0] == -1 | io_fds[1] == -1)
+	if (io_fds[1] == -1)
 		return (1);
 	return (0);
 }
@@ -187,15 +188,16 @@ int	main(int ac, char **av, char **envp)
 			return (free_all_error(new_av, path, 1));
 		path = get_path(new_av[0], envp);
 		if (!path || !*path)
-			return (free_all_error(new_av, path, 1));
+			status = (free_all_error(new_av, path, 1));
 		status = execute(i, ac, io_fds, pipes);
 		if (status)
 			if (execve(path, new_av, envp) == -1)
 			{
-				perror(NULL);
-				return(free_all_error(new_av, path, 1));
+				perror("HERE\n");
+				status = (free_all_error(new_av, path, 1));
 			}
-		free_all(new_av, path);
+		if (path && *path && new_av)
+			free_all(new_av, path);
 	}
 	close(io_fds[0]);
 	close(io_fds[1]);
