@@ -93,14 +93,12 @@ char	*get_path(char *program_name, char **envp)
 
 void	infile(int io_fds[2], int pipes[2][2])
 {
-	write(2, "Here1\n", 6);
 	dup2(io_fds[0], STDIN);
 	dup2(pipes[0][WRITE], STDOUT);
 }
 
 void	outfile(int i, int io_fds[2], int pipes[2][2])
 {
-	write(2, "Here4\n", 6);
 	if (i % 2)
 	{
 		close(pipes[0][WRITE]);
@@ -122,19 +120,14 @@ int	child(int i, int max, int io_fds[2], int pipes[2][2])
 		outfile(i, io_fds, pipes);
 	else if (i % 2)
 	{
-		write(2, "Here2\n", 6);
 		dup2(pipes[0][READ], STDIN);
 		dup2(pipes[1][WRITE], STDOUT);
 	}
 	else
 	{
-		write(2, "Here3\n", 6);
 		dup2(pipes[1][READ], STDIN);
 		dup2(pipes[0][WRITE], STDOUT);
 	}
-	write(2, "Executing cmd ", 14);
-	write(2, ft_itoa(i), 1);
-	write(2, "\n", 2);
 	return (1);
 }
 
