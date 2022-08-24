@@ -162,7 +162,7 @@ int	execute(int i, int max, int io_fds[2], int pipes[2][2])
 int check_io(int io_fds[2], char *infile, char *outfile)
 {
 	io_fds[0] = open(infile, O_RDONLY);
-	io_fds[1] = open(outfile, O_RDWR);
+	io_fds[1] = open(outfile, O_CREAT | O_RDWR | O_TRUNC, 0644);
 	if (io_fds[0] == -1 | io_fds[1] == -1)
 		return (1);
 	return (0);
