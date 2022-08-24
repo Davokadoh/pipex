@@ -154,6 +154,8 @@ int	execute(int i, int max, int io_fds[2], int pipes[2][2])
 
 int check_io(int io_fds[2], char *infile, char *outfile)
 {
+	if (access(infile, F_OK))
+		return (1);
 	io_fds[0] = open(infile, O_RDWR);
 	io_fds[1] = open(outfile, O_CREAT | O_RDWR | O_TRUNC, 0644);
 	//if (io_fds[0] == -1 | io_fds[1] == -1)
@@ -173,8 +175,6 @@ int	main(int ac, char **av, char **envp)
 
 	status = 1;
 	if (ac < 5)
-		return (1);
-	if (access(av[1], F_OK))
 		return (1);
 	if (check_io(io_fds, av[1], av[ac - 1]))
 		return (1);
