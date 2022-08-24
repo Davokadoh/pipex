@@ -172,6 +172,48 @@ int	main(int ac, char **av, char **envp)
 	char	**new_av;
 	int		io_fds[2];
 	int		pipes[2][2];
+	int		status;
+
+	status = 1;
+	if (ac < 5)
+		return (1);
+	if (access(av[1], F_OK))
+		return (1);
+	if (check_io(io_fds, av[1], av[ac - 1]))
+		return (1);
+	i = -1;
+	while (++i < ac - 3)
+	{
+		if (pipe(pipes[i % 2]) == -1)
+			return (1);
+		new_av = ft_split(av[i + 2], ' ');
+		if (!new_av || !*new_av || !**new_av)
+			return (free_all_error(new_av, path, 1));
+		path = get_path(new_av[0], envp);
+		if (!path || !*path)
+			return (free_all_error(new_av, path, 1));
+		status = execute(i, ac, io_fds, pipes);
+		if (status)
+			if (execve(path, new_av, envp) == -1)
+			{
+				perror(NULL);
+				return(free_all_error(new_av, path, 1));
+			}
+		free_all(new_av, path);
+	}
+	close(io_fds[0]);
+	close(io_fds[1]);
+	return (status);
+}
+
+/*
+int	main(int ac, char **av, char **envp)
+{
+	int		i;
+	char	*path;
+	char	**new_av;
+	int		io_fds[2];
+	int		pipes[2][2];
 
 	if (check_io(io_fds, av[1], av[ac - 1]))
 		return (1);
@@ -193,3 +235,4 @@ int	main(int ac, char **av, char **envp)
 	printf("End of pipex\n");
 	return (0);
 }
+*/
