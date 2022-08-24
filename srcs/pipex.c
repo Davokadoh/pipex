@@ -153,6 +153,9 @@ int	execute(int i, int max, int io_fds[2], int pipes[2][2])
 		close(pipes[1][WRITE]);
 	else
 		close(pipes[0][WRITE]);
+	if (WIFEXITED(status))
+		return (WEXITSTATUS(status));
+
 	return (0);
 }
 
